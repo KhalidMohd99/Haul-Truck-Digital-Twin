@@ -12,3 +12,4 @@ build/
 # User specified ignored files
 *statistical_analysis*
 *fleet_status*
+docs/
