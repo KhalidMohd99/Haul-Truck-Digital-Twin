@@ -37,3 +37,4 @@
     - [x] Create valid `requirements.txt` (Update for Dashboard) <!-- id: 16 -->
     - [x] Move docs to `docs/` folder <!-- id: 20 -->
     - [x] Update README with usage instructions <!-- id: 15 -->
+    - [x] Save Walkthrough & Plan to `docs/` <!-- id: 35 -->
