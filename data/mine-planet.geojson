@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "mine-planet",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32638" } },
+"features": [
+{ "type": "Feature", "properties": { "Id": 0, "name": "mine" }, "geometry": { "type": "Point", "coordinates": [ 42.700182926492801, 22.715927650045387 ] } },
+{ "type": "Feature", "properties": { "Id": 0, "name": "planet" }, "geometry": { "type": "Point", "coordinates": [ 42.718511161124695, 22.648879495255581 ] } }
+]
+}

@@ -1,0 +1,625 @@
+# DUAL FAILURE SCENARIO DOCUMENTATION
+## Mansourah-Massarah Haul Truck Fleet Telemetry
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+This enhanced dataset includes TWO DISTINCT FAILURE SCENARIOS occurring 
+simultaneously in different trucks:
+
+1. **Truck 7**: Progressive bearing failure (vibration-based signature)
+2. **Truck 12**: Cooling system failure (temperature-based signature)
+
+Both failures develop progressively over Days 5-7, providing rich multi-modal
+anomaly detection training data for LSTM-based predictive maintenance systems.
+
+KEY ENHANCEMENTS:
+✓ Two independent failure modes with distinct signatures
+✓ GPS coordinates along actual mine route
+✓ Multi-modal sensor correlation patterns
+✓ State-dependent failure manifestation
+✓ Secondary effects (fuel consumption, tire pressure)
+
+================================================================================
+FAILURE SCENARIO 1: TRUCK 7 - BEARING FAILURE
+================================================================================
+
+ROOT CAUSE:
+Progressive wear in drivetrain/wheel assembly bearing due to:
+- Accumulated mechanical stress over time
+- Road surface irregularities
+- Heavy payload cycles
+- Inadequate lubrication
+
+FAILURE TIMELINE:
+- Day 1-4: Normal operation (baseline)
+- Day 5, 00:00: Degradation onset (subtle changes)
+- Day 5-6: Progressive degradation (detectable anomaly)
+- Day 6-7: Critical phase (severe degradation, imminent failure)
+- Day 7, 00:00: Theoretical failure point (bearing collapse)
+
+DEGRADATION CHARACTERISTICS:
+- Type: Progressive mechanical wear
+- Progression: Non-linear (degradation^0.5 curve - accelerating)
+- Duration: 48 hours from onset to failure
+- Reversibility: Irreversible without maintenance
+
+PRIMARY FAILURE SIGNATURE - VIBRATION:
+
+Phase 1: Normal (Degradation 0-20%)
+- Vibration: 0.15-0.45 g
+- Behavior: Standard operational levels
+- Detection: Baseline noise, no anomaly
+
+Phase 2: Early Degradation (20-50%)
+- Vibration: 0.45-0.60 g (+35% increase)
+- Behavior: Noticeable elevation during loaded haul
+- Detection: Trend analysis required
+- Health Status: DEGRADING
+
+Phase 3: Moderate Degradation (50-80%)
+- Vibration: 0.60-0.80 g (+90% increase)
+- Behavior: Elevated across all operational states
+- Detection: Clear anomaly signature
+- Health Status: WARNING
+
+Phase 4: Critical Degradation (80-100%)
+- Vibration: 0.80-1.10 g (+240% increase)
+- Behavior: Severe spikes, erratic patterns
+- Detection: Obvious failure imminent
+- Health Status: CRITICAL
+
+VIBRATION BY OPERATIONAL STATE (Critical Phase):
+- QUEUE: 0.19g → 0.67g (+249%)
+- LOADING: Normal → Elevated
+- LOADED_HAUL: 0.47g → 0.95g (+103%) ⚠️ MOST AFFECTED
+- DUMPING: Normal → Elevated
+- EMPTY_RETURN: 0.24g → 0.72g (+198%)
+
+Note: LOADED_HAUL shows highest absolute vibration due to mechanical stress
+from full payload on rough road surface.
+
+SECONDARY EFFECTS:
+- Temperature: Slight increase due to friction (~5-8°C)
+- Fuel consumption: Minimal increase (~2-3%)
+- Tire pressure: Normal (no direct impact)
+- Speed: Normal (bearing failure doesn't affect propulsion)
+
+MAINTENANCE IMPLICATIONS:
+- Detection threshold: Vibration > 0.60 g sustained
+- Action required: When RUL < 24 hours
+- Repair: Bearing replacement (~4 hours downtime)
+- Cost: Predictive ~$5K, Reactive ~$50K+ (catastrophic damage)
+
+================================================================================
+FAILURE SCENARIO 2: TRUCK 12 - COOLING SYSTEM FAILURE
+================================================================================
+
+ROOT CAUSE:
+Cooling system degradation due to:
+- Radiator blockage (dust/debris in desert environment)
+- Coolant pump wear/failure
+- Thermostat malfunction
+- Coolant leak reducing system capacity
+
+FAILURE TIMELINE:
+- Day 1-4.5: Normal operation (baseline)
+- Day 4.5, 12:00: Degradation onset (cooling efficiency reduces)
+- Day 5-6: Progressive degradation (overheating develops)
+- Day 6-7: Critical phase (severe overheating)
+- Day 7, 12:00: Theoretical failure point (engine seizure risk)
+
+DEGRADATION CHARACTERISTICS:
+- Type: System efficiency degradation
+- Progression: Gradual then rapid (degradation^0.7 curve)
+- Duration: 48 hours from onset to failure
+- Reversibility: Fixable if caught early, catastrophic if ignored
+
+PRIMARY FAILURE SIGNATURE - TEMPERATURE:
+
+Phase 1: Normal (Degradation 0-20%)
+- Temperature: 85-110°C
+- Behavior: Standard thermal management
+- Detection: Within normal operating range
+
+Phase 2: Early Degradation (20-50%)
+- Temperature: 110-130°C (+15-25°C)
+- Behavior: Reduced cooling efficiency noticeable
+- Detection: Trend toward higher baseline
+- Health Status: DEGRADING
+
+Phase 3: Moderate Degradation (50-80%)
+- Temperature: 130-150°C (+40-60°C)
+- Behavior: Overheating during high-load operations
+- Detection: Clear temperature anomaly
+- Health Status: WARNING
+
+Phase 4: Critical Degradation (80-100%)
+- Temperature: 150-220°C (+70-130°C)
+- Behavior: Severe overheating, engine damage risk
+- Detection: Obvious critical failure
+- Health Status: CRITICAL
+
+TEMPERATURE BY OPERATIONAL STATE (Critical Phase):
+- QUEUE: 83°C → 92°C (+9°C) - Even idle affected
+- LOADING: Normal → Elevated
+- LOADED_HAUL: 117°C → 205°C (+88°C) ⚠️ MOST CRITICAL
+- DUMPING: Normal → Elevated  
+- EMPTY_RETURN: 97°C → 144°C (+46°C)
+
+Note: LOADED_HAUL shows extreme overheating due to high engine load 
+combined with uphill gradient. This is where engine seizure risk is highest.
+
+SECONDARY EFFECTS:
+
+Fuel Consumption:
+- Normal: 21.9 L/h
+- Critical: 26.7 L/h
+- Increase: +22.3% (thermal inefficiency)
+
+Vibration:
+- Minimal increase (~5-10%)
+- Not primary indicator
+
+Tire Pressure:
+- Slight increase due to heat transfer
+- Not diagnostic
+
+Engine Performance:
+- Power loss at high temperatures
+- Risk of thermal shutdown
+
+OPERATIONAL RISKS:
+- Engine seizure if temperature exceeds 200°C
+- Warped cylinder heads
+- Blown head gasket
+- Catastrophic engine failure requiring replacement
+
+MAINTENANCE IMPLICATIONS:
+- Detection threshold: Temperature > 130°C sustained
+- Action required: When RUL < 24 hours or temp > 150°C
+- Repair: Radiator flush/replacement, pump replacement (~6 hours)
+- Cost: Predictive ~$3K, Reactive ~$80K+ (engine replacement)
+
+================================================================================
+COMPARATIVE ANALYSIS: BEARING vs COOLING FAILURES
+================================================================================
+
+SIGNATURE COMPARISON:
+
+| Aspect | Bearing Failure (T7) | Cooling Failure (T12) |
+|--------|---------------------|----------------------|
+| Primary Sensor | Vibration | Temperature |
+| Increase Factor | 3.3x (0.33g → 1.10g) | 2.1x (103°C → 220°C) |
+| Onset | Day 5, 00:00 | Day 4.5, 12:00 |
+| Duration | 48 hours | 48 hours |
+| Most Affected State | LOADED_HAUL | LOADED_HAUL |
+| Progression | Accelerating (x^0.5) | Gradual then sudden (x^0.7) |
+| Secondary Effect | Temp (+5°C) | Fuel (+22%) |
+| Reversibility | No | Yes (if early) |
+| Catastrophic Risk | Medium | High |
+
+DETECTION COMPLEXITY:
+
+Bearing Failure (Easier):
+- Clear single-sensor signature
+- Less affected by ambient conditions
+- Consistent across states
+- Minimal confounding factors
+
+Cooling Failure (Harder):
+- Temperature affected by ambient temp
+- State-dependent (highest in LOADED_HAUL)
+- Fuel consumption is ambiguous indicator
+- Must distinguish from normal hot weather operation
+
+LSTM TRAINING ADVANTAGES:
+
+The dual failure scenario provides:
+
+1. **Feature Importance Learning**: Model learns which sensors matter for which failure
+2. **Multi-Modal Detection**: Trains on different failure signatures simultaneously  
+3. **False Positive Reduction**: 18 healthy trucks provide strong negative examples
+4. **Failure Mode Classification**: Can distinguish bearing vs cooling failures
+5. **Realistic Complexity**: Real-world systems have multiple failure modes
+
+================================================================================
+NEW DATA FIELDS (DUAL FAILURE DATASET)
+================================================================================
+
+18. cooling_degradation
+    - Type: Float
+    - Range: 0.0-1.0 (dimensionless)
+    - Description: Cooling system degradation factor
+    
+    Values:
+    - 0.0: Healthy cooling system, normal operation
+    - 0.0-0.3: Early degradation (subtle efficiency loss)
+    - 0.3-0.6: Moderate degradation (noticeable overheating)
+    - 0.6-0.85: Severe degradation (critical overheating)
+    - 0.85-1.0: Critical failure (engine damage risk)
+    
+    Applies to: Truck 12 only (Days 4.5-7)
+    All other trucks: cooling_degradation = 0.0
+
+19. failure_mode
+    - Type: String
+    - Values: 'bearing', 'cooling', 'none'
+    - Description: Type of failure affecting the truck
+    
+    Mapping:
+    - Truck 7: 'bearing'
+    - Truck 12: 'cooling'
+    - Trucks 1-6, 8-11, 13-20: 'none'
+    
+    Use: For failure mode classification in multi-class LSTM
+
+================================================================================
+DATASET STRUCTURE
+================================================================================
+
+Total Records: 403,200
+- 20 trucks × 20,160 records each
+- 7 days × 24 hours × 120 samples/hour × 20 trucks
+
+Columns: 19 total
+- 4 GPS fields (longitude, latitude, altitude, heading)
+- 8 sensor fields (temp, vibration, tire pressure, speed, fuel, ambient)
+- 4 operational fields (state, time in state, timestamp, truck ID)
+- 3 degradation/failure fields (bearing, cooling, failure mode)
+- 2 target fields (health status, RUL hours)
+
+File Size: ~55 MB (CSV format)
+Format: UTF-8 encoded, comma-separated values
+
+Healthy Trucks (18): 362,880 records (90%)
+Failing Trucks (2): 40,320 records (10%)
+  - Truck 7: 20,160 records (8,409 with bearing degradation)
+  - Truck 12: 20,160 records (6,622 with cooling degradation)
+
+================================================================================
+LSTM TRAINING STRATEGY FOR DUAL FAILURES
+================================================================================
+
+APPROACH 1: MULTI-TASK LEARNING
+
+Architecture:
+- Shared LSTM layers (learn general patterns)
+- Separate output heads:
+  * Head 1: Bearing degradation (regression)
+  * Head 2: Cooling degradation (regression)
+  * Head 3: Health status (classification)
+  * Head 4: RUL hours (regression)
+
+Loss Function:
+Combined loss = α·L_bearing + β·L_cooling + γ·L_health + δ·L_rul
+
+Advantages:
+- Model learns relationships between failure modes
+- Shared representations improve generalization
+- Can detect multiple failures simultaneously
+
+APPROACH 2: FAILURE MODE CLASSIFICATION
+
+Architecture:
+- LSTM encoder
+- Dense classifier for failure_mode
+- Conditional decoder based on failure type
+
+Training:
+- Phase 1: Train classifier on failure_mode
+- Phase 2: Train failure-specific branches
+
+Advantages:
+- Explicit failure type identification
+- Specialized processing per failure mode
+- Interpretable predictions
+
+APPROACH 3: ENSEMBLE MODELS
+
+Architecture:
+- Model A: Specialized for bearing detection (vibration-focused)
+- Model B: Specialized for cooling detection (temperature-focused)
+- Model C: Meta-classifier for final decision
+
+Training:
+- Train A and B separately on failure-specific data
+- Train C to combine predictions
+
+Advantages:
+- Best performance per failure type
+- Fault tolerance (one model can fail)
+- Easier to interpret and debug
+
+RECOMMENDED FEATURES:
+
+Core Features (All Models):
+- engine_temp_celsius
+- vibration_g
+- tire_pressure_psi
+- speed_kph
+- fuel_consumption_lph
+- operational_state (one-hot encoded)
+- ambient_temp_celsius
+
+Derived Features:
+- vibration_rolling_mean (window=20)
+- vibration_rolling_std (window=20)
+- temp_rolling_mean (window=20)
+- temp_delta (rate of change)
+- fuel_delta (efficiency change)
+- time_in_state_normalized
+
+Contextual Features:
+- hour_of_day (cyclical encoding)
+- gps_altitude_m (load indication)
+- gps_heading_deg (route position)
+
+TRAIN/VAL/TEST SPLIT:
+
+Training Set (Days 1-4):
+- All 20 trucks, all healthy
+- 230,400 records
+- Learn normal operation patterns
+- Establish baselines for all sensors
+
+Validation Set (Day 5):
+- Trucks 1-6, 8-11, 13-20 (healthy)
+- Trucks 7, 12 (early degradation)
+- 57,600 records
+- Tune hyperparameters
+- Early stopping based on val_loss
+
+Test Set (Days 6-7):
+- All 20 trucks
+- Trucks 7, 12 showing critical failures
+- 115,200 records
+- Evaluate failure detection accuracy
+- Measure false positive rate on healthy trucks
+
+EVALUATION METRICS:
+
+Per-Failure-Mode Metrics:
+1. Bearing Detection (Truck 7):
+   - RMSE of bearing_degradation prediction
+   - Time to detection (hours before failure)
+   - False positive rate (healthy trucks flagged)
+
+2. Cooling Detection (Truck 12):
+   - RMSE of cooling_degradation prediction  
+   - Time to detection (hours before failure)
+   - Temperature threshold accuracy
+
+3. Combined Performance:
+   - Overall RUL prediction MAE
+   - Health status classification accuracy
+   - Failure mode classification accuracy (3 classes)
+
+Early Warning Evaluation:
+- % of failures detected at 24h+ advance
+- % of failures detected at 12h+ advance
+- % of failures detected at 6h+ advance
+
+False Alarm Rate:
+- % of healthy truck samples flagged as WARNING
+- % of healthy truck samples flagged as CRITICAL
+- Target: <5% false positive rate
+
+================================================================================
+REAL-WORLD APPLICATION SCENARIOS
+================================================================================
+
+SCENARIO 1: Predictive Maintenance Dashboard
+
+Input: Real-time telemetry stream from 20 trucks
+Process: LSTM inference every 30 seconds
+Output: 
+  - Fleet health heatmap
+  - Individual truck RUL predictions
+  - Failure mode identification
+  - Maintenance schedule optimization
+
+Benefits:
+  - Prevent catastrophic failures
+  - Schedule maintenance during downtime
+  - Reduce emergency repair costs by 80%
+  - Increase fleet availability by 15%
+
+SCENARIO 2: Mobile Operator Alerts
+
+Input: On-board sensor data
+Process: Edge LSTM inference on truck computer
+Output:
+  - Real-time alerts to operator
+  - "WARNING: High vibration detected, reduce speed"
+  - "CRITICAL: Engine overheating, seek maintenance"
+
+Benefits:
+  - Prevent operator-caused damage
+  - Immediate response to failures
+  - Reduce accident risk
+
+SCENARIO 3: Fleet Optimization
+
+Input: Historical failure data + current telemetry
+Process: LSTM + optimization algorithm
+Output:
+  - Optimal route assignments (avoid rough roads for weak bearings)
+  - Load balancing (distribute stress across fleet)
+  - Maintenance scheduling (service before failure)
+
+Benefits:
+  - Maximize fleet productivity
+  - Minimize downtime
+  - Extend asset lifespan
+
+================================================================================
+COMPARISON: SINGLE vs DUAL FAILURE DATASETS
+================================================================================
+
+Original Dataset (Truck 7 Only):
+- 1 failure mode (bearing)
+- Single primary sensor (vibration)
+- Simpler LSTM architecture
+- Easier to train and debug
+- Good for proof-of-concept
+
+Dual Failure Dataset (Trucks 7 & 12):
+- 2 failure modes (bearing + cooling)
+- Multiple primary sensors (vibration + temperature)
+- Complex multi-task LSTM required
+- More realistic industrial scenario
+- Better for production deployment
+
+Size Impact:
+- Original: 13 columns
+- Dual Failure: 19 columns (+6)
+- File size: 35MB → 55MB (+57%)
+- Training time: +40% (more features)
+
+Performance Impact:
+- Overall accuracy: Similar or better
+- Failure mode specificity: Much better
+- False positive rate: Potentially lower (more negative examples)
+- Generalization: Better to new failure types
+
+================================================================================
+TROUBLESHOOTING COMMON LSTM TRAINING ISSUES
+================================================================================
+
+ISSUE 1: Model Predicts Only Bearing Failures
+
+Cause: Imbalanced failure representation
+- Truck 7 degradation starts earlier (Day 5 vs 4.5)
+- Vibration signature is stronger (3.3x vs 2.1x increase)
+
+Solutions:
+- Class weighting in loss function
+- Separate cooling_degradation output head
+- Oversample Truck 12 data during training
+
+ISSUE 2: High False Positives on Temperature
+
+Cause: Ambient temperature variation confused with failure
+- Desert climate: 15-40°C daily swing
+- Normal peak temps overlap with early degradation
+
+Solutions:
+- Include ambient_temp_celsius as explicit feature
+- Use temperature delta (engine - ambient)
+- Temperature rate of change more diagnostic than absolute value
+
+ISSUE 3: State-Dependent Detection Varies
+
+Cause: Failure signatures stronger in certain states
+- Bearing worst in LOADED_HAUL (heavy load)
+- Cooling worst in LOADED_HAUL (high engine load)
+- QUEUE shows minimal symptoms
+
+Solutions:
+- State-aware thresholds
+- Operational_state as input feature
+- Train separate models per state (not recommended)
+
+ISSUE 4: Late Detection (Failure Already Critical)
+
+Cause: Model waits for strong signal to be confident
+- Conservative thresholds
+- Insufficient sensitivity to early changes
+
+Solutions:
+- Lower WARNING threshold
+- Trend analysis (rate of change)
+- Ensemble: sensitive model + specific model
+
+================================================================================
+EXPORT AND USAGE
+================================================================================
+
+CSV Format (Current):
+- Standard tabular format
+- Compatible with: pandas, NumPy, scikit-learn, TensorFlow, PyTorch
+- Easy to filter by truck_id, failure_mode, health_status
+
+Recommended Workflow:
+
+1. Load and Explore:
+```python
+import pandas as pd
+df = pd.read_csv('mansourah_haul_truck_telemetry_dual_failures.csv')
+
+# Separate by failure mode
+truck7 = df[df['truck_id'] == 7]  # Bearing failure
+truck12 = df[df['truck_id'] == 12]  # Cooling failure
+healthy = df[df['failure_mode'] == 'none']
+```
+
+2. Feature Engineering:
+```python
+# Rolling statistics
+df['vibration_rolling_mean'] = df.groupby('truck_id')['vibration_g'].rolling(20).mean()
+df['temp_rolling_std'] = df.groupby('truck_id')['engine_temp_celsius'].rolling(20).std()
+
+# State encoding
+df = pd.get_dummies(df, columns=['operational_state'])
+```
+
+3. Train/Val/Test Split:
+```python
+train = df[df['timestamp'] < '2024-01-19']  # Days 1-4
+val = df[(df['timestamp'] >= '2024-01-19') & (df['timestamp'] < '2024-01-21')]  # Day 5-6
+test = df[df['timestamp'] >= '2024-01-21']  # Day 6-7
+```
+
+4. LSTM Training (see lstm_training_template.py)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The dual-failure dataset provides a comprehensive, realistic simulation of
+industrial IoT telemetry for haul truck fleet predictive maintenance. With
+two distinct failure modes (bearing and cooling) affecting different sensors,
+this dataset enables training of sophisticated multi-modal LSTM models capable
+of:
+
+✓ Detecting multiple failure types simultaneously
+✓ Distinguishing failure modes based on sensor signatures  
+✓ Providing early warnings (12-24 hours advance)
+✓ Minimizing false positives on healthy trucks
+✓ Optimizing maintenance schedules and fleet operations
+
+This enhanced complexity reflects real-world industrial scenarios where
+equipment can fail in various ways, requiring intelligent systems that can
+adapt and respond appropriately to each failure mode.
+
+================================================================================
+QUICK REFERENCE
+================================================================================
+
+Truck 7 (Bearing Failure):
+- Primary Sensor: vibration_g
+- Onset: Day 5, 00:00
+- Degradation: 48 hours
+- Max Vibration: 1.10 g (3.3x increase)
+- Warning Lead Time: 17.3 hours
+
+Truck 12 (Cooling Failure):
+- Primary Sensor: engine_temp_celsius
+- Onset: Day 4.5, 12:00
+- Degradation: 48 hours
+- Max Temperature: 222°C (+119°C increase)
+- Warning Lead Time: 13.1 hours
+- Fuel Penalty: +22.3%
+
+Healthy Trucks (18):
+- Truck IDs: 1-6, 8-11, 13-20
+- No failures throughout 7 days
+- Baseline for normal operation
+
+Dataset Fields: 19 columns
+Key Columns: engine_temp_celsius, vibration_g, bearing_degradation,
+            cooling_degradation, failure_mode, health_status, rul_hours
+
+================================================================================

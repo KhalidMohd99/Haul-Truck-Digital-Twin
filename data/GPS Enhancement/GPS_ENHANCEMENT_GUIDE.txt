@@ -1,0 +1,486 @@
+# GPS-ENHANCED HAUL TRUCK FLEET TELEMETRY
+## Mansourah-Massarah Gold Mine, Saudi Arabia
+
+================================================================================
+PROJECT OVERVIEW - GPS ENHANCEMENT
+================================================================================
+
+This enhanced dataset includes real GPS coordinates interpolated along the actual
+haul route between the mine pit and processing plant, based on authentic GeoJSON
+route data from the Mansourah-Massarah Gold Mine operation.
+
+ENHANCEMENTS ADDED:
+✓ GPS coordinates (longitude, latitude) along actual route
+✓ Altitude tracking (150m → 300m elevation gain)
+✓ Heading/bearing calculations (0-360 degrees)
+✓ Linear interpolation between waypoints based on speed
+✓ GPS noise simulation (±3m typical accuracy)
+
+================================================================================
+NEW FIELDS - GPS DATA
+================================================================================
+
+14. gps_longitude
+    - Type: Float
+    - Unit: Degrees (WGS84)
+    - Range: 42.694007° to 42.718689°
+    - Precision: 8 decimal places (~1.1mm accuracy)
+    
+    Description: Longitude coordinate of truck position
+    - Mine pit location: 42.700183°
+    - Plant location: 42.718511°
+    - Route spans ~2.5 km east-west
+    
+    Behavior:
+    - QUEUE/LOADING: Fixed at mine coordinates (42.700183°)
+    - LOADED_HAUL: Interpolated along loaded route waypoints
+    - DUMPING: Fixed at plant coordinates (42.718511°)
+    - EMPTY_RETURN: Interpolated along return route waypoints
+    
+    GPS Noise: ±0.00003° (~3 meters) Gaussian noise added
+
+15. gps_latitude
+    - Type: Float
+    - Unit: Degrees (WGS84)
+    - Range: 22.648762° to 22.716078°
+    - Precision: 8 decimal places (~1.1mm accuracy)
+    
+    Description: Latitude coordinate of truck position
+    - Mine pit location: 22.715928°
+    - Plant location: 22.648879°
+    - Route spans ~7.4 km north-south
+    
+    Behavior: Same interpolation pattern as longitude
+    GPS Noise: ±0.00003° (~3 meters) Gaussian noise added
+
+16. gps_altitude_m
+    - Type: Float
+    - Unit: Meters above sea level
+    - Range: 141.4m to 307.7m
+    - Typical: Mine ~150m, Plant ~300m
+    
+    Description: Elevation/altitude of truck position
+    
+    Physics Behavior:
+    - QUEUE/LOADING: ~150m (pit floor elevation)
+    - LOADED_HAUL: Linear increase from 150m → 300m (uphill)
+    - DUMPING: ~300m (plant/crusher elevation)
+    - EMPTY_RETURN: Linear decrease from 300m → 150m (downhill)
+    
+    Elevation Gain: 150 meters total (gradual 1.8% grade)
+    GPS Noise: ±2m Gaussian noise added
+
+17. gps_heading_deg
+    - Type: Float
+    - Unit: Degrees (0-360)
+    - Range: 0° = North, 90° = East, 180° = South, 270° = West
+    
+    Description: Direction of travel (bearing/heading)
+    
+    Calculated from:
+    - Previous GPS position
+    - Current GPS position
+    - Bearing formula: arctan2(Δlon, Δlat)
+    
+    Typical Values:
+    - QUEUE/LOADING/DUMPING: 0° (stationary, no heading)
+    - LOADED_HAUL: ~166° (south-southeast toward plant)
+    - EMPTY_RETURN: ~248° (west-southwest back to mine)
+    
+    Use Cases:
+    - Verify truck is following route
+    - Detect route deviations
+    - Collision avoidance
+    - Fleet coordination
+
+================================================================================
+ROUTE GEOMETRY
+================================================================================
+
+Haul Route Structure:
+┌─────────────────────────────────────────────────────┐
+│  MINE PIT (North)                                   │
+│  Lon: 42.700183°, Lat: 22.715928°                  │
+│  Altitude: ~150m                                     │
+│                                                      │
+│  ↓ LOADED HAUL (8.48 km, ~15 min)                  │
+│  └─→ 105 waypoints                                  │
+│      Heading: ~166° (SSE)                           │
+│      Speed: 35 km/h average                         │
+│      Grade: +1.8% (gaining 150m)                    │
+│                                                      │
+│  PROCESSING PLANT (South)                           │
+│  Lon: 42.718511°, Lat: 22.648879°                  │
+│  Altitude: ~300m                                     │
+│                                                      │
+│  ↑ EMPTY RETURN (8.50 km, ~10 min)                 │
+│  └─→ 85 waypoints                                   │
+│      Heading: ~248° (WSW)                           │
+│      Speed: 50 km/h average                         │
+│      Grade: -1.8% (losing 150m)                     │
+│                                                      │
+│  MINE PIT (Return)                                  │
+└─────────────────────────────────────────────────────┘
+
+Total Route Distance:
+- Loaded haul: 8.48 km
+- Empty return: 8.50 km
+- Round trip: 16.98 km per cycle
+- Elevation gain/loss: 150 m each way
+
+GPS Coordinate Bounds:
+- Longitude span: 42.694° to 42.719° (2.5 km E-W)
+- Latitude span: 22.649° to 22.716° (7.4 km N-S)
+- Diagonal distance: ~8.5 km
+
+================================================================================
+GPS INTERPOLATION METHODOLOGY
+================================================================================
+
+Route Waypoint Interpolation:
+
+1. Load GeoJSON route coordinates (105 loaded, 85 return waypoints)
+
+2. Calculate cumulative distance along route:
+   - Use Haversine formula for lat/lon → meters
+   - Create distance array from start to each waypoint
+
+3. Create interpolation functions:
+   - Scipy interp1d for longitude vs distance
+   - Scipy interp1d for latitude vs distance
+   - Linear interpolation between waypoints
+
+4. Position calculation during simulation:
+   - Determine progress through current state (0-1)
+   - Calculate distance = progress × total_route_length
+   - Interpolate lon/lat at that distance
+   - Calculate altitude based on progress (linear)
+
+5. Add realistic GPS noise:
+   - Gaussian noise ±3m horizontal (typical GPS accuracy)
+   - Gaussian noise ±2m vertical (altitude less accurate)
+
+Heading Calculation:
+- Bearing = arctan2(Δlon·cos(lat), Δlat)
+- Converted to degrees, normalized 0-360
+- Based on movement between consecutive samples
+
+================================================================================
+GEOSPATIAL ANALYSIS CAPABILITIES
+================================================================================
+
+1. ROUTE TRACKING
+   - Verify trucks follow designated route
+   - Detect route deviations or shortcuts
+   - Identify off-road excursions
+
+2. SPEED-LOCATION CORRELATION
+   - Identify speed zones (uphill slow, downhill fast)
+   - Detect speeding or unsafe driving
+   - Optimize cycle times
+
+3. VIBRATION HOTSPOTS
+   - Map vibration levels to specific route segments
+   - Identify rough road sections needing maintenance
+   - Correlate failure signatures with location
+
+4. FLEET COORDINATION
+   - Track multiple truck positions simultaneously
+   - Prevent collisions at narrow sections
+   - Optimize spacing and timing
+
+5. GEOFENCING
+   - Define safety zones around mine/plant
+   - Alert if trucks enter restricted areas
+   - Monitor proximity to hazards
+
+6. ENVIRONMENTAL MONITORING
+   - Dust generation by location
+   - Fuel efficiency on different terrain
+   - Route optimization for emissions
+
+================================================================================
+SAMPLE DATA ANALYSIS
+================================================================================
+
+Example GPS Track (Truck 7, Single Cycle):
+
+Time    State           Lon         Lat         Alt(m)  Heading  Speed
+-----   --------------- ----------- ----------- ------- -------- -----
+06:00   QUEUE           42.700183   22.715928   150     0        0
+06:03   LOADING         42.700183   22.715928   150     0        0
+06:07   LOADED_HAUL     42.700512   22.715778   155     166      35
+06:10   LOADED_HAUL     42.702797   22.679500   200     165      35
+06:15   LOADED_HAUL     42.710302   22.666384   260     168      35
+06:20   LOADED_HAUL     42.716722   22.650193   290     167      35
+06:22   LOADED_HAUL     42.718511   22.648879   300     166      35
+06:24   DUMPING         42.718511   22.648879   300     0        0
+06:26   EMPTY_RETURN    42.716722   22.650193   290     248      50
+06:30   EMPTY_RETURN    42.710302   22.666384   240     247      50
+06:34   EMPTY_RETURN    42.702797   22.679500   200     249      50
+06:36   EMPTY_RETURN    42.700183   22.715928   150     248      50
+06:38   QUEUE           42.700183   22.715928   150     0        0
+
+Total cycle: 38 minutes
+Distance traveled: 16.98 km round trip
+Average speed (moving): 41 km/h
+
+================================================================================
+VISUALIZATION EXAMPLES
+================================================================================
+
+1. GPS Track Map
+   - Plot lon/lat coordinates as scatter/line plot
+   - Color by health status (green → red)
+   - Show mine and plant locations
+   - Overlay reference route
+
+2. Elevation Profile
+   - Plot altitude vs time or distance
+   - Show uphill gradient during loaded haul
+   - Identify steep sections
+
+3. Speed Heatmap
+   - Color code route by speed
+   - Identify slowest sections (bottlenecks)
+   - Optimize for traffic flow
+
+4. Vibration Hotspots
+   - Map vibration intensity along route
+   - Identify rough road segments
+   - Target maintenance efforts
+
+5. Heading Rose Plot
+   - Polar histogram of heading distribution
+   - Separate loaded vs empty directions
+   - Verify route geometry
+
+6. Fleet Position Heatmap
+   - 2D histogram of all truck positions
+   - Identify high-traffic areas
+   - Optimize loading/dumping queues
+
+================================================================================
+GPS-AWARE LSTM FEATURES
+================================================================================
+
+Additional Features for LSTM Models:
+
+1. Position-Based Features:
+   - Distance from mine/plant
+   - Progress through current route segment
+   - Proximity to other trucks
+
+2. Elevation Features:
+   - Current altitude
+   - Altitude rate of change
+   - Cumulative elevation gain/loss
+
+3. Heading Features:
+   - Current heading
+   - Heading rate of change (turning)
+   - Deviation from expected heading
+
+4. Route Segment Encoding:
+   - One-hot encode route segments (e.g., 10 zones)
+   - Identify high-stress zones
+   - Location-specific failure patterns
+
+5. Spatial Anomaly Detection:
+   - Vibration-location correlation
+   - Temperature-altitude correlation
+   - Speed-location deviation
+
+Example Feature Engineering:
+
+```python
+# Distance from mine
+df['distance_from_mine'] = haversine(
+    df['gps_longitude'], df['gps_latitude'],
+    mine_lon, mine_lat
+)
+
+# Altitude rate of change
+df['altitude_change_rate'] = df.groupby('truck_id')['gps_altitude_m'].diff() / 30
+
+# Heading deviation (from expected route)
+df['heading_deviation'] = abs(df['gps_heading_deg'] - expected_heading[state])
+
+# Route segment (divide into 10 segments)
+df['route_segment'] = pd.cut(df['distance_from_mine'], bins=10, labels=range(10))
+```
+
+================================================================================
+REAL-WORLD APPLICATIONS
+================================================================================
+
+Fleet Management Dashboard:
+- Live map showing all 20 truck positions
+- Color-coded by health status
+- Speed, fuel, vibration overlays
+- ETA to loading/dumping points
+
+Predictive Maintenance:
+- Detect vibration anomalies at specific locations
+- Correlate bearing failures with route segments
+- Schedule maintenance before critical failures
+
+Route Optimization:
+- Analyze speed profiles by segment
+- Identify bottlenecks and delays
+- Optimize traffic flow (one-way sections)
+
+Safety Monitoring:
+- Geofencing around hazards
+- Collision warning when trucks too close
+- Speed limit enforcement by zone
+
+Environmental Compliance:
+- Track dust generation by location
+- Optimize routes for minimal emissions
+- Monitor restricted area intrusions
+
+Operational Analytics:
+- Cycle time analysis by route
+- Fuel consumption by terrain
+- Productivity by shift/operator
+
+================================================================================
+EXPORT FORMATS
+================================================================================
+
+CSV (Current):
+- Standard tabular format
+- Lat/lon as decimal degrees
+- Compatible with all analysis tools
+
+GeoJSON (Included):
+- truck7_gps_track.geojson
+- LineString geometry
+- Colored by health status
+- Compatible with QGIS, Leaflet, Mapbox
+
+Recommended Visualization Tools:
+- Python: matplotlib, plotly, folium
+- QGIS: GIS software for spatial analysis
+- Leaflet/Mapbox: Web-based interactive maps
+- Tableau/Power BI: Dashboard creation
+
+================================================================================
+COMPARISON: ORIGINAL vs GPS-ENHANCED
+================================================================================
+
+Original Dataset:
+- 13 columns
+- Abstract location (state-based only)
+- No spatial information
+- Time-series analysis only
+
+GPS-Enhanced Dataset:
+- 17 columns (+4 GPS fields)
+- Real coordinates from actual mine
+- Spatial + temporal analysis
+- Geospatial anomaly detection
+- Fleet coordination
+- Route optimization
+- Safety monitoring
+
+Size Increase:
+- Minimal: +4 columns (float64)
+- File size: ~35 MB → ~45 MB
+- Worth it for spatial capabilities!
+
+================================================================================
+GETTING STARTED WITH GPS DATA
+================================================================================
+
+Quick Start (Python):
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load data
+df = pd.read_csv('mansourah_haul_truck_telemetry_with_gps.csv')
+
+# Plot Truck 7 GPS track
+truck7 = df[df['truck_id'] == 7]
+plt.scatter(truck7['gps_longitude'], truck7['gps_latitude'], 
+           c=truck7['vibration_g'], cmap='RdYlGn_r', s=1)
+plt.colorbar(label='Vibration (g)')
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+plt.title('Truck 7 GPS Track - Vibration Heatmap')
+plt.show()
+```
+
+Interactive Map (Folium):
+
+```python
+import folium
+
+# Create map centered on mine
+m = folium.Map(location=[22.682, 42.709], zoom_start=13)
+
+# Add truck track
+for _, row in truck7[::100].iterrows():
+    folium.CircleMarker(
+        location=[row['gps_latitude'], row['gps_longitude']],
+        radius=3,
+        color='red' if row['health_status'] == 'CRITICAL' else 'green'
+    ).add_to(m)
+
+m.save('truck7_track.html')
+```
+
+================================================================================
+TECHNICAL SPECIFICATIONS
+================================================================================
+
+Coordinate Reference System: WGS84 (EPSG:4326)
+- Standard GPS coordinate system
+- Longitude/latitude in decimal degrees
+- Compatible with all GPS devices
+
+Spatial Resolution:
+- Horizontal accuracy: ±3m (typical GPS)
+- Vertical accuracy: ±2m (barometric altimeter)
+- Update rate: 30 seconds (0.5 Hz)
+
+Route Fidelity:
+- 105 waypoints on loaded route
+- 85 waypoints on return route
+- Linear interpolation between waypoints
+- Sub-meter accuracy maintained
+
+Performance:
+- 403,200 GPS coordinates calculated
+- Generation time: ~60 seconds
+- Real-time capable for streaming applications
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The GPS-enhanced dataset provides a complete spatio-temporal simulation of
+haul truck operations at the Mansourah-Massarah Gold Mine. With real route
+coordinates, elevation tracking, and heading calculations, this dataset
+enables advanced geospatial analysis, fleet management, and location-aware
+predictive maintenance models.
+
+Key Benefits:
+✓ Real-world route geometry from actual mine
+✓ Physics-based interpolation along route
+✓ Heading and altitude tracking
+✓ Geospatial anomaly detection capability
+✓ Fleet coordination and safety monitoring
+✓ Route optimization potential
+
+Next Steps:
+1. Visualize GPS tracks in QGIS or web maps
+2. Train location-aware LSTM models
+3. Implement geofencing and safety zones
+4. Develop real-time fleet tracking dashboard
+5. Analyze route efficiency and optimization
+
+================================================================================

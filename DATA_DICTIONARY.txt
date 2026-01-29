@@ -1,0 +1,441 @@
+# MANSOURAH-MASSARAH GOLD MINE
+# HAUL TRUCK FLEET TELEMETRY DATA DICTIONARY
+
+================================================================================
+PROJECT INFORMATION
+================================================================================
+
+Location: Mansourah-Massarah Gold Mine, Saudi Arabia
+Coordinates: ~24.5°N, 42.6°E (Eastern Province)
+Mine Type: Open-pit gold mining operation
+Fleet: 20 Caterpillar-class haul trucks (300-ton capacity)
+
+Operational Layout:
+- Mine pit (excavation site): Northern section
+- Processing plant (crusher): Southern section
+- Single haul corridor connecting pit to plant
+- Approximate haul distance: 3-4 km one-way
+- Elevation gain: ~150m from pit to surface/plant
+
+Climate: Desert climate with high diurnal temperature variation
+- Daytime highs: 35-45°C
+- Nighttime lows: 15-25°C
+- Peak temperature: ~14:00-15:00 local time
+
+================================================================================
+DATASET OVERVIEW
+================================================================================
+
+Total Records: 403,200
+Duration: 7 days continuous operation (168 hours)
+Sample Rate: 30 seconds (0.5 Hz)
+Trucks: 20 (IDs 1-20)
+Records per Truck: 20,160
+
+Failure Scenario:
+- Truck ID 7: Progressive bearing failure
+- Degradation onset: Day 6, 06:00
+- Failure point: Day 7, 06:00
+- Degradation duration: 48 hours
+
+================================================================================
+FIELD DEFINITIONS
+================================================================================
+
+1. timestamp
+   - Type: DateTime
+   - Format: YYYY-MM-DD HH:MM:SS
+   - Description: UTC timestamp of sensor reading
+   - Sample Rate: 30-second intervals
+   - Range: 2024-01-15 06:00:00 to 2024-01-22 05:59:30
+
+2. truck_id
+   - Type: Integer
+   - Range: 1-20
+   - Description: Unique identifier for each haul truck
+   - Special: Truck 7 experiences bearing failure
+
+3. operational_state
+   - Type: Categorical String
+   - Values:
+     * QUEUE: Truck waiting in line at shovel loading point
+     * LOADING: Excavator loading ore into truck bed
+     * LOADED_HAUL: Truck transporting ore uphill from pit to plant
+     * DUMPING: Truck unloading ore at crusher/processing plant
+     * EMPTY_RETURN: Truck returning empty downhill to pit
+   
+   - State Sequence: QUEUE → LOADING → LOADED_HAUL → DUMPING → EMPTY_RETURN → [repeat]
+   
+   - Typical Durations:
+     * QUEUE: 180 ± 60 seconds (depends on shovel availability)
+     * LOADING: 240 ± 30 seconds (excavator cycle time)
+     * LOADED_HAUL: 900 ± 120 seconds (uphill with ~300 tons)
+     * DUMPING: 120 ± 20 seconds (hopper unload time)
+     * EMPTY_RETURN: 720 ± 90 seconds (downhill empty)
+   
+   - Total Cycle Time: ~40-45 minutes per complete cycle
+
+4. time_in_state_sec
+   - Type: Float
+   - Unit: Seconds
+   - Range: 0 to state_duration
+   - Description: Elapsed time since entering current operational state
+   - Use: Helps identify progression within state for physics modeling
+
+5. engine_temp_celsius
+   - Type: Float
+   - Unit: Degrees Celsius (°C)
+   - Range: 76-135°C
+   - Normal Operating: 85-110°C
+   - Warning Threshold: >120°C
+   - Critical Threshold: >130°C
+   
+   - Physics Behavior:
+     * QUEUE: Cooling (~85-95°C) - engine idling
+     * LOADING: Slight increase (~93-105°C) - hydraulic systems active
+     * LOADED_HAUL: Maximum heat (~105-135°C) - heavy load uphill
+     * DUMPING: Moderate (~95-110°C) - unloading operations
+     * EMPTY_RETURN: Gradual cooling (~100-115°C) - downhill coasting
+   
+   - Influencing Factors:
+     * Ambient temperature (diurnal cycle)
+     * Load weight
+     * Grade/incline
+     * Engine load percentage
+     * Cooling system efficiency
+
+6. vibration_g
+   - Type: Float
+   - Unit: G-force (acceleration due to gravity)
+   - Range: 0.11-1.11 g
+   - Normal Operating: 0.15-0.45 g
+   - Warning Threshold: >0.60 g
+   - Critical Threshold: >0.80 g
+   
+   - Physics Behavior:
+     * QUEUE: Low vibration (~0.15-0.20 g) - minimal movement
+     * LOADING: Moderate (~0.20-0.30 g) - material impact
+     * LOADED_HAUL: High (~0.30-0.60 g) - road roughness + load
+     * DUMPING: Moderate (~0.25-0.35 g) - hydraulic bed lift
+     * EMPTY_RETURN: Moderate (~0.20-0.35 g) - unloaded travel
+   
+   - Degradation Signature (Truck 7):
+     * Phase 1 (0-30% degradation): Slight elevation in baseline
+     * Phase 2 (30-60% degradation): Noticeable increase in LOADED_HAUL
+     * Phase 3 (60-85% degradation): Elevated across all states
+     * Phase 4 (85-100% degradation): Critical levels, erratic spikes
+   
+   - Measurement: Typically from accelerometer on drivetrain/axle
+
+7. tire_pressure_psi
+   - Type: Float
+   - Unit: Pounds per square inch (psi)
+   - Range: 90-107 psi
+   - Normal Operating: 95-105 psi
+   - Low Pressure Warning: <95 psi
+   - Critical Threshold: <90 psi
+   
+   - Physics Behavior:
+     * Slight increase during LOADED_HAUL due to temperature
+     * Minor fluctuations due to ambient temperature
+     * Gradual degradation over 7-day period (~5% total)
+   
+   - Measurement: TPMS (Tire Pressure Monitoring System)
+
+8. speed_kph
+   - Type: Float
+   - Unit: Kilometers per hour (km/h)
+   - Range: 0-80 km/h
+   - Typical Loaded Speed: 25-40 km/h (uphill)
+   - Typical Empty Speed: 40-55 km/h (downhill)
+   
+   - By State:
+     * QUEUE: 0 km/h
+     * LOADING: 0 km/h
+     * LOADED_HAUL: 25-45 km/h (reduced due to grade + load)
+     * DUMPING: 0 km/h
+     * EMPTY_RETURN: 40-65 km/h (faster, downhill, empty)
+   
+   - Measurement: GPS or wheel speed sensors
+
+9. fuel_consumption_lph
+   - Type: Float
+   - Unit: Liters per hour (L/h)
+   - Range: 1-46 L/h
+   - Idle Consumption: 2-4 L/h
+   - Loaded Haul: 20-40 L/h (peak consumption)
+   
+   - By State:
+     * QUEUE: ~2 L/h (idle)
+     * LOADING: ~4 L/h (idle + hydraulics)
+     * LOADED_HAUL: ~25-35 L/h (maximum load + grade)
+     * DUMPING: ~5 L/h (hydraulic bed lift)
+     * EMPTY_RETURN: ~15-20 L/h (moderate load)
+   
+   - Measurement: Flow meter on fuel line
+
+10. ambient_temp_celsius
+    - Type: Float
+    - Unit: Degrees Celsius (°C)
+    - Range: 15-40°C
+    - Description: External air temperature
+    
+    - Diurnal Pattern:
+      * Minimum: ~06:00-07:00 (~18-22°C)
+      * Maximum: ~14:00-15:00 (~35-42°C)
+      * Sinusoidal variation typical of desert climate
+    
+    - Impacts:
+      * Engine cooling efficiency
+      * Tire pressure
+      * Operator comfort/performance
+
+11. bearing_degradation
+    - Type: Float
+    - Range: 0.0-1.0 (dimensionless)
+    - Description: Progressive degradation factor for bearing failure
+    
+    - Values:
+      * 0.0: Healthy bearing, no degradation
+      * 0.0-0.3: Early degradation (subtle changes)
+      * 0.3-0.6: Moderate degradation (detectable anomaly)
+      * 0.6-0.85: Severe degradation (clear failure signature)
+      * 0.85-1.0: Critical failure (imminent breakdown)
+    
+    - Truck 7 Only:
+      * All other trucks: bearing_degradation = 0.0
+      * Truck 7: Progressive degradation over 48 hours
+      * Non-linear growth: degradation^0.5 curve
+    
+    - Physical Meaning: Fractional loss of bearing integrity
+
+12. health_status
+    - Type: Categorical String
+    - Values:
+      * NORMAL: Healthy operation, no anomalies
+      * DEGRADING: Early signs of bearing wear (degradation 0.2-0.5)
+      * WARNING: Moderate degradation detected (degradation 0.5-0.8)
+      * CRITICAL: Severe degradation, immediate action required (>0.8)
+    
+    - Classification Thresholds:
+      * NORMAL: bearing_degradation < 0.2
+      * DEGRADING: 0.2 ≤ bearing_degradation < 0.5
+      * WARNING: 0.5 ≤ bearing_degradation < 0.8
+      * CRITICAL: bearing_degradation ≥ 0.8
+    
+    - Trucks 1-6, 8-20: Always NORMAL
+    - Truck 7: Transitions through all states
+
+13. rul_hours
+    - Type: Float
+    - Unit: Hours
+    - Range: 0-168 hours
+    - Description: Remaining Useful Life until failure
+    
+    - Calculation:
+      * For Truck 7: Time remaining until bearing failure
+      * For Trucks 1-6, 8-20: Fixed at 168 hours (healthy)
+    
+    - RUL Milestones (Truck 7):
+      * >48 hours: NORMAL
+      * 24-48 hours: DEGRADING phase begins
+      * 8-24 hours: WARNING phase
+      * 0-8 hours: CRITICAL phase
+      * 0 hours: Failure point
+    
+    - Use: Primary target variable for predictive maintenance LSTM
+
+================================================================================
+DATA QUALITY & VALIDATION
+================================================================================
+
+Missing Values: None (complete dataset)
+Outliers: Minimal, within physical sensor limits
+Noise: Gaussian noise added to simulate real sensor measurements
+
+Sensor Accuracy:
+- Engine Temperature: ±0.5°C
+- Vibration: ±0.02 g
+- Tire Pressure: ±0.2 psi
+- Speed: ±1 km/h
+- Fuel Flow: ±0.3 L/h
+
+Data Integrity Checks Passed:
+✓ Timestamp continuity (30-second intervals)
+✓ State transitions follow logical sequence
+✓ Sensor values within physical limits
+✓ Truck 7 degradation progresses monotonically
+✓ RUL decreases linearly for Truck 7
+
+================================================================================
+LSTM TRAINING GUIDANCE
+================================================================================
+
+FEATURE ENGINEERING RECOMMENDATIONS:
+
+1. Temporal Features:
+   - Hour of day (cyclical encoding)
+   - Time since last state transition
+   - Cumulative operating hours
+
+2. Derived Features:
+   - Rolling mean vibration (window: 10-20 samples)
+   - Rolling std vibration (detect increasing variability)
+   - Temperature rate of change
+   - Speed acceleration/deceleration
+   - Vibration-to-speed ratio
+
+3. State Encoding:
+   - One-hot encode operational_state (5 categories)
+   - Or use cyclical encoding if treating as circular
+
+4. Normalization:
+   - StandardScaler for continuous variables
+   - Fit on training data only (no data leakage)
+
+SEQUENCE PREPARATION:
+
+Window Size: 60-100 timesteps (30-50 minutes)
+- Captures multiple state transitions
+- Sufficient context for temporal patterns
+
+Stride: 10-20 timesteps
+- Overlapping windows increase training samples
+- Smooth predictions during inference
+
+TARGET VARIABLE OPTIONS:
+
+1. Regression: rul_hours (continuous)
+   - Loss: MSE or MAE
+   - Evaluation: RMSE, MAE, R²
+
+2. Classification: health_status (4 classes)
+   - Loss: Categorical crossentropy
+   - Evaluation: Accuracy, F1-score, confusion matrix
+
+3. Multi-task: Both RUL and health status
+   - Combined loss function
+   - Shared LSTM layers, separate output heads
+
+TRAIN/VAL/TEST SPLIT:
+
+Training Set:
+- Days 1-5: All trucks
+- 100% healthy operation
+- ~288,000 samples
+
+Validation Set:
+- Day 6: Trucks 1-6, 8-20 (healthy trucks only)
+- Prevents overfitting on degradation patterns
+- ~57,600 samples
+
+Test Set:
+- Days 6-7: Truck 7 (with failure)
+- Days 6-7: Trucks 1-6, 8-20 (continued normal operation)
+- Evaluates failure detection and false positive rate
+- ~57,600 samples
+
+ANOMALY DETECTION APPROACH:
+
+1. Train LSTM autoencoder on healthy data
+2. Reconstruction error threshold for anomalies
+3. High error → Potential failure signature
+
+OR
+
+1. Train LSTM for RUL prediction on healthy + labeled degraded data
+2. Predict RUL for new data
+3. Decreasing RUL → Early warning
+
+EVALUATION METRICS:
+
+1. RUL Prediction Accuracy:
+   - RMSE of RUL predictions
+   - Mean Absolute Error (MAE)
+   - R² score
+
+2. Early Detection Performance:
+   - Time to detection (how early?)
+   - Detection rate at WARNING threshold
+   - Detection rate at DEGRADING threshold
+
+3. False Positive Control:
+   - False alarm rate on healthy trucks (1-6, 8-20)
+   - Precision and recall for anomaly detection
+
+4. Prognostic Horizon:
+   - How many hours in advance is failure predicted?
+   - With what confidence level?
+
+================================================================================
+PHYSICAL INTERPRETATION
+================================================================================
+
+BEARING FAILURE SIGNATURES:
+
+Primary Indicator: Vibration Increase
+- Healthy: 0.15-0.45 g
+- Early degradation: 0.45-0.60 g
+- Critical: >0.80 g
+- Most pronounced during LOADED_HAUL state
+
+Secondary Indicators:
+- Increased temperature variability (thermal stress)
+- Slight changes in fuel consumption (drivetrain efficiency)
+- Tire pressure may show minor fluctuations
+
+ROOT CAUSE:
+Bearing degradation in drivetrain/wheel assembly leads to:
+- Increased friction
+- Unbalanced rotation
+- Elevated vibration levels
+- Potential catastrophic failure if not addressed
+
+MAINTENANCE IMPLICATIONS:
+
+RUL < 24 hours: Schedule immediate inspection
+RUL < 8 hours: Remove truck from service
+RUL = 0: Bearing replacement required
+
+Cost Savings:
+- Predictive: Schedule maintenance, minimize downtime (~$5K)
+- Reactive: Emergency breakdown, extended downtime (~$50K+)
+
+================================================================================
+CITATION & ATTRIBUTION
+================================================================================
+
+Dataset Generated By: Claude (Anthropic AI)
+Generation Date: January 2026
+Purpose: Industrial IoT simulation for predictive maintenance research
+Contact: Anthropic, Inc.
+
+Simulation Parameters:
+- Physics-based telemetry modeling
+- Realistic operational cycles
+- Progressive failure injection
+- Suitable for LSTM training and anomaly detection research
+
+================================================================================
+APPENDIX: COLUMN SUMMARY TABLE
+================================================================================
+
+| Column Name              | Type    | Unit    | Range          | Description                    |
+|--------------------------|---------|---------|----------------|--------------------------------|
+| timestamp                | DateTime| -       | 7 days         | Sensor reading timestamp       |
+| truck_id                 | Integer | -       | 1-20           | Unique truck identifier        |
+| operational_state        | String  | -       | 5 states       | Current operational phase      |
+| time_in_state_sec        | Float   | seconds | 0-900          | Time elapsed in current state  |
+| engine_temp_celsius      | Float   | °C      | 76-135         | Engine temperature             |
+| vibration_g              | Float   | g       | 0.11-1.11      | Vibration magnitude            |
+| tire_pressure_psi        | Float   | psi     | 90-107         | Tire pressure                  |
+| speed_kph                | Float   | km/h    | 0-80           | Vehicle speed                  |
+| fuel_consumption_lph     | Float   | L/h     | 1-46           | Fuel consumption rate          |
+| ambient_temp_celsius     | Float   | °C      | 15-40          | External temperature           |
+| bearing_degradation      | Float   | -       | 0.0-1.0        | Bearing failure progress       |
+| health_status            | String  | -       | 4 categories   | Overall health classification  |
+| rul_hours                | Float   | hours   | 0-168          | Remaining useful life          |
+
+================================================================================
+END OF DATA DICTIONARY
+================================================================================

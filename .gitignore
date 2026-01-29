@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.png
+*.jpg
+*.jpeg
+dist/
+build/
+.DS_Store
+# User specified ignored files
+*statistical_analysis*
+*fleet_status*
