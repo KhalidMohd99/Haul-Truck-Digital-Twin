@@ -82,15 +82,16 @@ def get_truck_trails(df, current_time, window_minutes=30):
     trails = df[(df['timestamp'] <= current_time) & (df['timestamp'] >= start_time)]
     return trails
 
-def create_map_figure(fleet_status, all_data=None, current_time=None, route_geojson=None, mapbox_token=None):
+def create_map_figure(fleet_status, all_data=None, current_time=None, route_geojson=None):
     """
-    Creates an "Operational Intelligence Map" with Satellite view, Risk coloring, and Trails.
+    Creates an "Operational Intelligence Map" with Risk coloring and Trails.
+    Defaults to High-Contrast Dark Mode.
     """
     if fleet_status.empty:
         return go.Figure()
 
-    # 1. Base Map Configuration (Satellite)
-    # Using Esri World Imagery as a free satellite alternative if no Mapbox token
+    # 1. Base Map Configuration
+    # Using 'carto-darkmatter' for Control Room feel
     
     fig = go.Figure()
 
@@ -107,7 +108,7 @@ def create_map_figure(fleet_status, all_data=None, current_time=None, route_geoj
                         lon=lons,
                         lat=lats,
                         marker={'size': 5},
-                        line={'width': 1, 'color': 'rgba(200, 200, 200, 0.5)'}, # Subtle white/grey for satellite contrast
+                        line={'width': 1, 'color': 'rgba(200, 200, 200, 0.5)'}, # Subtle white/grey
                         name='Haul Route',
                         showlegend=False
                     ))
@@ -172,31 +173,11 @@ def create_map_figure(fleet_status, all_data=None, current_time=None, route_geoj
         ))
 
     # Layout configuration
-    
-    if mapbox_token:
-        # Use Mapbox Satellite if token provided
-        mapbox_dict = dict(
-            accesstoken=mapbox_token,
-            style="mapbox://styles/mapbox/satellite-v9",
-            center=dict(lat=fleet_status['latitude'].mean(), lon=fleet_status['longitude'].mean()),
-            zoom=14
-        )
-    else:
-        # Fallback to Esri Satellite (White BG + Raster Layer)
-        # Note: Plotly doesn't natively support Esri tiles easily without a proper style URL or layers.
-        # For simplicity and robustness if user has no token, we stick to 'open-street-map' but dark style
-        # OR use "white-bg" and add a raster layer. Let's try "carto-darkmatter" for "Control Room" feel if no satellite.
-        # Actually, user requested Satellite specifically. Let's try to use "white-bg" layers if possible, but simplest is 'open-street-map' with a specific style if available.
-        # Let's use 'carto-darkmatter' as a fallback "Control Room" style as it looks very professional, unless we can get a public satellite tile.
-        # Common free satellite tiles often require keys. 
-        # let's stick to standard mapbox styles available in plotly, 'carto-darkmatter' is great for dashboards.
-        # But REQ said "Esri satellite".
-        # Let's provide a reliable fallback.
-        mapbox_dict = dict(
-            style="carto-darkmatter", # High contrast fallback
-            center=dict(lat=fleet_status['latitude'].mean(), lon=fleet_status['longitude'].mean()),
-            zoom=14
-        )
+    mapbox_dict = dict(
+        style="carto-darkmatter", # High contrast fallback
+        center=dict(lat=fleet_status['latitude'].mean(), lon=fleet_status['longitude'].mean()),
+        zoom=14
+    )
         
     fig.update_layout(
         mapbox=mapbox_dict,
@@ -235,7 +216,9 @@ def create_sensor_plot(df, truck_id, sensor_col, title):
         # Assuming anomaly starts halfway through the spike
         anomaly_time = truck_data[truck_data[sensor_col] > 0.6]['timestamp'].min()
         if pd.notna(anomaly_time):
-             fig.add_vline(x=anomaly_time, line_width=1, line_dash="dash", line_color="yellow", annotation_text="AI Anomaly Detection", annotation_position="top right")
+             # Fix for Plotly TypeError with Timestamp arithmetic
+             # Convert to milliseconds since epoch or just use the timestamp value directly after conversion
+             fig.add_vline(x=anomaly_time.timestamp() * 1000, line_width=1, line_dash="dash", line_color="yellow", annotation_text="AI Anomaly Detection", annotation_position="top right")
 
     # Update axis styles for "Control Room" look
     fig.update_layout(

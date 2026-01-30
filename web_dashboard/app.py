@@ -78,7 +78,7 @@ st.sidebar.header("🕹️ Control Panel")
 
 # Map Settings
 st.sidebar.subheader("Map Settings")
-mapbox_token = st.sidebar.text_input("Mapbox Token (Optional)", type="password", help="Enter token for Satellite view. Leave empty for High-Contrast Dark Mode.")
+st.sidebar.info("Map Style: High-Contrast Dark Mode")
 
 # Time Simulation Slider
 min_time = df['timestamp'].min()
@@ -107,7 +107,7 @@ current_status = get_fleet_status(df, selected_time)
 with col1:
     st.subheader("🗺️ Operational Intelligence Map")
     # Pass all data for trails
-    map_fig = create_map_figure(current_status, df, selected_time, routes, mapbox_token)
+    map_fig = create_map_figure(current_status, df, selected_time, routes)
     st.plotly_chart(map_fig, use_container_width=True)
 
 with col2:
